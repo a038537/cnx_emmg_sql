@@ -1,0 +1,1 @@
+g++ main.c -o get_value  `mysql_config --cflags --libs`
