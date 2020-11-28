@@ -5,8 +5,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdint.h>
+#include <mysql.h>
 #include "parser.h"
 #include "conax_core.h"
+
 
 int i;
 int timer;
@@ -15,8 +17,14 @@ uint8_t tbuffer[64];
 bool fileopen = 0;
 bool fileerr = 0;
 FILE *fp = NULL;
-char temm[200] = {0};
+char temm[1024] = {0};
 uint8_t debug = 0;
+
+void finish_with_errors(MYSQL *con){
+  fprintf(stderr, "%s\n", mysql_error(con));
+  mysql_close(con);
+  exit(1);
+}
 
 int main(int argc, char const *argv[])
 {
@@ -24,8 +32,22 @@ int main(int argc, char const *argv[])
 	const char *ip = "127.0.0.1";
 	const char *database = "127.0.0.1";
 	const char *dbname = "neovision";
-	const char *user = "root";
-	const char *pass = "gftty2478";
+	const char *user = "admin";
+	const char *pass = "password";
+    int sock = 0, BytesSent = 0;
+    struct sockaddr_in serv_addr;
+    char buffer[1024] = {0};
+    char sendbuf[1024];
+
+    MYSQL *con = mysql_init(NULL);
+    MYSQL_ROW row;
+    MYSQL_RES *result;
+    int num_fields;
+
+    if (con == NULL){
+      fprintf(stderr, "mysql_init() failed\n");
+      exit(1);
+    }
 
      if(argc < 2){
         fprintf(stderr,"Error! No args defined! Exiting...\n");
@@ -71,13 +93,9 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-	//port = atoi(argv[1]);
 	read_syskey_sql(debug,database,user,pass,dbname);
 	read_keys_sql(debug,database,user,pass,dbname);
-    int sock = 0, BytesSent;
-    struct sockaddr_in serv_addr;
-    char buffer[1024] = {0};
-    char sendbuf[1024];
+
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         printf("\n Socket creation error \n");
@@ -104,7 +122,7 @@ int main(int argc, char const *argv[])
      send(sock, sendbuf, ((sendbuf[4]+5) &0xff ), 0);
      recv(sock , buffer, 1024,0);
 	if(debug == 1){
-		printf("\n");
+		printf("\n\n\n");
 		printf("Incoming Message\n");
 		for(i =0;i < buffer[4]+5;i++){printf("%02X ",buffer[i]&0xff);}
 		printf("\n");
@@ -125,69 +143,123 @@ int main(int argc, char const *argv[])
 		printf("\n");
 		printf("Incoming Message\n");
 		for(i =0;i < buffer[4]+5;i++){printf("%02X ",buffer[i]&0xff);}
-		printf("\n");
+		printf("\n\n\n");
 	 }
+
+    /* CONNECT TO DB */
+    if (mysql_real_connect(con, database, user, pass, dbname, 0, NULL, 0) == NULL){
+      finish_with_errors(con);
+    }
 
 while(true){
 
     if(timer <= time(0)){
 
-	if((!fileopen) && (!fileerr)){
-		fp = fopen("./emm.txt", "rt");
-		if(fp == NULL){
-			fprintf(stderr,"\n\nemm.txt not found!\n\n");
-			fileerr = 1;
+
+
+    /* SEND UNIQUE EMM TO ALL CARDS IN SUBSCRIPTION */
+    if (mysql_query(con, " \
+                SELECT concat('U:',abo.ppua,' '), concat('S:',abo.`start-date`,' ') , \
+                  concat('E:',abo.`stop-date`,' '), concat('A:',abo.access,' '), \
+                  concat('N:',providers.providername,' '), concat('SA:',cards.ppsa,' '), concat('ID:',providers.chid,' ')\
+                FROM neovision.providers join neovision.abo join neovision.cards \
+                ON providers.chid = abo.chid and cards.ppua = abo.ppua and cards.deleted = 0;\
+                "))
+    {
+        finish_with_errors(con);
+    }
+
+  result = mysql_store_result(con);
+
+  if (result == NULL){
+      finish_with_errors(con);
+  }
+
+  num_fields = mysql_num_fields(result);
+
+    while ((row = mysql_fetch_row(result))){
+        for(int i = 0; i < num_fields; i++){
+            //printf("%s ", row[i] ? row[i] : "NULL");
+            strcat(temm,row[i]);
+        }
+        //printf("%s\n",temm);
+        generate_emm(temm,tbuffer,debug);
+        genframe(sendbuf);
+        copyemm(sendbuf,tbuffer);
+        if(debug == 1){
+			for(int i =0;i < 0xcf;i++){printf("%02X ",sendbuf[i]&0xff);}
+			printf("\n");
+		}
+        BytesSent = send(sock, sendbuf, ((sendbuf[4]+5) &0xff ), 0);
+
+		if(BytesSent == SO_ERROR){
+			printf("Client: send() error.\n");
 		} else {
 			if(debug == 1){
-				fprintf(stderr,"\n\nemm.txt opened\n\n ");
+				printf("Client: send() is OK - bytes sent: %d\n\n\n", BytesSent);
 			}
-			fileopen = 1;
-		}
-	}
-
-
-
-    if (fileopen)
-    {
-        while(!feof(fp)){
-			fgets(temm,100,fp);
-			generate_emm(temm,tbuffer,debug);
-            genframe(sendbuf);
-            copyemm(sendbuf,tbuffer);
-			if(debug == 1){
-				for(int i =0;i < 0xcf;i++){printf("%02X ",sendbuf[i]&0xff);}
-				printf("\n");
-			}
-            BytesSent = send(sock, sendbuf, ((sendbuf[4]+5) &0xff ), 0);
-
-			if(BytesSent == SO_ERROR){
-				printf("Client: send() error.\n");
-			} else {
-				if(debug == 1){
-					printf("Client: send() is OK - bytes sent: %d\n", BytesSent);
-				}
 			}
 			usleep(50000);
+            memset(temm,0,1023);
+            //mysql_free_result(result);
+
+	} /* END SEND UNIQUE EMM */
+
+	/* SEND SHARED EMM TO ALL CARDS IN SUBSCRIPTION */
+    if (mysql_query(con, "SELECT DISTINCT concat('G:',ppsa) FROM neovision.cards JOIN neovision.abo WHERE cards.deleted = 0 AND cards.ppua = abo.ppua;"))
+    {
+        finish_with_errors(con);
+    }
+
+    result = mysql_store_result(con);
+    if (result == NULL){finish_with_errors(con);}
+    num_fields = mysql_num_fields(result);
+
+    while ((row = mysql_fetch_row(result))){
+        for(int i = 0; i < num_fields; i++){
+            //printf("%s ", row[i] ? row[i] : "NULL");
+            strcat(temm,row[i]);
         }
-		fclose(fp);
-		fileopen = 0;
+        //printf("%s\n",temm);
+        generate_emm(temm,tbuffer,debug);
+        genframe(sendbuf);
+        copyemm(sendbuf,tbuffer);
+        if(debug == 1){
+			for(int i =0;i < 0xcf;i++){printf("%02X ",sendbuf[i]&0xff);}
+			printf("\n");
+		}
+        BytesSent = send(sock, sendbuf, ((sendbuf[4]+5) &0xff ), 0);
+
+		if(BytesSent == SO_ERROR){
+			printf("Client: send() error.\n");
+		} else {
+			if(debug == 1){
+				printf("Client: send() is OK - bytes sent: %d\n\n\n", BytesSent);
+			}
+			}
+			usleep(50000);
+            memset(temm,0,1023);
+            //mysql_free_result(result);
+
+	} /* END SEND SHARED EMM */
+
+    /* DELETE OLD SUBSCRIPTIONS */
+    if (mysql_query(con, "DELETE FROM neovision.abo WHERE abo.`stop-date` < (NOW() - INTERVAL 1 MONTH);"))
+    {
+        finish_with_errors(con);
+    }
+
 		if(debug == 1){
 			printf("Database processed... Continue sending NULL-Packets\n");
 		}
 		timer = (time(0)+120);
-    } else {
-		printf("ERROR: EMM.txt not found! \n");
-		timer = (time(0)+120);
-	}
+        mysql_free_result(result);
+     //end while rows
     }
 
-	if(BytesSent == SO_ERROR){
-          printf("Client: send() error .\n");
-	} else {
-          //printf("Client: send() is OK - bytes sent: %d\n", BytesSent);
-    }
-
-usleep(50000);
+    usleep(50000);
 }
+    mysql_free_result(result);
+    mysql_close(con);
     return 0;
 }

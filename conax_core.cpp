@@ -195,6 +195,11 @@ void read_keys_sql(uint8_t debug,const char *database,const char *user,const cha
     mysql_close(con);
 }
 
+void getemm_sql(){
+}
+
+
+
 void generate_ecm(uint8_t *chid,uint8_t *buffernew,uint8_t *access,uint8_t keynum,uint8_t *cw0 ,uint8_t *cw1,uint8_t debug){
     union _kkk{
         uint16_t _16date;
@@ -273,7 +278,7 @@ uint8_t generate_emm(char *in,uint8_t *out,uint8_t debug){
     memcpy(&out[0],&emmbuffer[0],64);
 
         if(in[0] == 0x55){
-            sscanf(in,"U:%d S:%d/%d/%d E:%d/%d/%d A:%08x N:%s SA:%d ID:%04x",&ppua,&day,&mon,&year,&day2,&mon2,&year2,&acc,&name[0],&ppsa,&sid);
+            sscanf(in,"U:%d S:%d-%d-%d E:%d-%d-%d A:%08x N:%s SA:%d ID:%04x",&ppua,&year,&mon,&day,&year2,&mon2,&day2,&acc,&name[0],&ppsa,&sid);
             if(debug == 1){
                 printf("Serial-No:   %d PPUA: %08X\n",ppua,ppua);
                 printf("Start-date:  %02d.%02d.%d ",day,mon,year);

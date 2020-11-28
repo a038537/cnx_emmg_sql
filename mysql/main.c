@@ -48,14 +48,11 @@ int main(int argc, char **argv)
 
   result = mysql_store_result(con);
 
-  if (result == NULL)
-  {
+  if (result == NULL){
       finish_with_error(con);
   }
 
   num_fields = mysql_num_fields(result);
-
-
 
     while ((row = mysql_fetch_row(result))){
         for(int i = 0; i < num_fields; i++){
