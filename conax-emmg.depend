@@ -1,0 +1,47 @@
+# depslib dependency file v1.0
+1606386969 source:r:\temp\conax-emmg\main.cpp
+	<winsock2.h>
+	<stdio.h>
+	<windows.h>
+	<unistd.h>
+	<string.h>
+	<stdint.h>
+	"parser.h"
+	"conax_core.h"
+
+1605783781 r:\temp\conax-emmg\parser.h
+	<stdint.h>
+
+1606387448 r:\temp\conax-emmg\conax_core.h
+	<time.h>
+	<stdio.h>
+	<fstream>
+	<cstring>
+	<stdint.h>
+
+1606054805 source:r:\temp\conax-emmg\parser.cpp
+	"parser.h"
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<string.h>
+	<stdint.h>
+	<stdbool.h>
+
+1606387400 source:r:\temp\conax-emmg\conax_core.cpp
+	<stdint.h>
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<cstring>
+	"conax_core.h"
+	"aes.h"
+
+1605690862 source:r:\temp\conax-emmg\aes.cpp
+	<stdio.h>
+	<string.h>
+	<stdint.h>
+	"aes.h"
+
+1605690862 r:\temp\conax-emmg\aes.h
+
