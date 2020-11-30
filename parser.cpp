@@ -26,22 +26,28 @@ const uint8_t emm[0xe0] = {
 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
-void setup(int runde,char *sendbuffer){
+void setup(int runde,char *sendbuffer,uint8_t debug){
 int i;
      //send(SendingSocket, init001, ((init001[4]+5) &0xff ), 0);
      switch(runde){
      case 0:{
-        for(i =0;i < init001[4]+5;i++){printf("%02X ",init001[i]&0xff);}
+        if(debug == 1){
+            for(i =0;i < init001[4]+5;i++){printf("%02X ",init001[i]&0xff);}
+        }
         for(i =0;i < init001[4]+5;i++){sendbuffer[i] = (init001[i]&0xff);}
         break;
      }
     case 1:{
-        for(i =0;i < ans0111[4]+5;i++){printf("%02X ",ans0111[i]&0xff);}
+        if(debug == 1){
+            for(i =0;i < ans0111[4]+5;i++){printf("%02X ",ans0111[i]&0xff);}
+        }
         for(i =0;i < ans0111[4]+5;i++){sendbuffer[i] = (ans0111[i]&0xff);}
         break;
     }
     case 2:{
-        for(i =0;i < ans0117[4]+5;i++){printf("%02X ",ans0117[i]&0xff);}
+        if(debug == 1){
+            for(i =0;i < ans0117[4]+5;i++){printf("%02X ",ans0117[i]&0xff);}
+        }
         for(i =0;i < ans0117[4]+5;i++){sendbuffer[i] = (ans0117[i]&0xff);}
         break;
     }

@@ -128,7 +128,9 @@ void read_syskey_sql(uint8_t debug,const char *database,const char *user,const c
             printf("%02X ",syskey[idx]);
         }
     }
-    printf("\n");
+    if(debug ==1){
+        printf("\n");
+    }
     mysql_free_result(result);
     mysql_close(con);
 }
@@ -169,7 +171,9 @@ void read_keys_sql(uint8_t debug,const char *database,const char *user,const cha
             printf("%02X ",key20[idx]);
         }
     }
-    printf("\n");
+    if(debug ==1){
+        printf("\n");
+    }
 
     if (mysql_query(con, "SELECT ecmkey FROM ecmg_keys where id=21")){
         finish_with_error(con);
@@ -189,15 +193,13 @@ void read_keys_sql(uint8_t debug,const char *database,const char *user,const cha
             printf("%02X ",key21[idx]);
         }
     }
-    printf("\n");
+    if(debug ==1){
+        printf("\n");
+    }
 
     mysql_free_result(result);
     mysql_close(con);
 }
-
-void getemm_sql(){
-}
-
 
 
 void generate_ecm(uint8_t *chid,uint8_t *buffernew,uint8_t *access,uint8_t keynum,uint8_t *cw0 ,uint8_t *cw1,uint8_t debug){
@@ -267,7 +269,8 @@ uint8_t generate_emm(char *in,uint8_t *out,uint8_t debug){
     uint32_t acc;
     char name[20] ={0};
     uint32_t sid;
-    uint8_t pp[4];
+    uint8_t pp[4],idx;
+    uint16_t time = _conax_time();
 
     union _emm{
         uint8_t _in[0x30];
@@ -280,50 +283,57 @@ uint8_t generate_emm(char *in,uint8_t *out,uint8_t debug){
         if(in[0] == 0x55){
             sscanf(in,"U:%d S:%d-%d-%d E:%d-%d-%d A:%08x N:%s SA:%d ID:%04x",&ppua,&year,&mon,&day,&year2,&mon2,&day2,&acc,&name[0],&ppsa,&sid);
             if(debug == 1){
+                printf("UNIQUE EMM\n");
                 printf("Serial-No:   %d PPUA: %08X\n",ppua,ppua);
                 printf("Start-date:  %02d.%02d.%d ",day,mon,year);
-                printf("End-date: %02d.%d.%02d ",day2,mon2,year2);
+                printf("End-date: %02d.%02d.%d ",day2,mon2,year2);
                 printf("Access Criteria: %08X\n",acc);
                 printf("PPSA Update: %08X ",ppsa);
                 printf("SERVICE-ID: %04X ",sid);
             }
+
+            /* FILL EMM BUFFER */
+            idx = 16;
+            out[idx] = time >> 8 & 0xff;idx++;
+            out[idx] = time & 0xff;idx++;
+            out[idx] = 0xA0;idx++;
+            out[idx] = 0x00;idx++;
+            out[8] = out[idx] = ppua >> 24 & 0xff;idx++;
+            out[9] = out[idx] = ppua >> 16 & 0xff;idx++;
+            out[10] = out[idx] = ppua >> 8 & 0xff;idx++;
+            out[11] = out[idx] =  ppua & 0xff;idx++;
+            out[idx] = 0xA0;idx++;
+            out[idx] = 0x03;idx++;
+            out[idx] = _emmdate(day,mon,year) >> 8 & 0xff;idx++;
+            out[idx] = _emmdate(day,mon,year) & 0xff;idx++;
+            out[idx] = _emmdate(day2,mon2,year2) >> 8 & 0xff;idx++;
+            out[idx] = _emmdate(day2,mon2,year2) & 0xff;idx++;
+            out[idx] = 0xA0;idx++;
+            out[idx] = 0x04;idx++;
+            out[idx] = acc >> 24 & 0xff;idx++;
+            out[idx] = acc >> 16 & 0xff;idx++;
+            out[idx] = acc >> 8 & 0xff;idx++;
+            out[idx] = acc & 0xff;idx++;
             if(strlen(name)>=1){
                     if(debug == 1){
                         printf("Name: %s\n",name);
                     }
-                    out[34] = 0xA0;
-                    out[35] = 0x10;
-                    memset(&out[36],0x20,0x0f);
-                    memcpy(&out[36],&name[0],strlen(name));
+                    out[idx] = 0xA0;idx++;
+                    out[idx] = 0x10;idx++;
+                    memset(&out[idx],0x20,0x0f);
+                    memcpy(&out[idx],&name[0],strlen(name));
+                    idx += 15;
             }
-            out[16] = 0xA0;
-            out[17] = 0x00;
-            out[8] = out[18] = ppua >> 24 & 0xff;
-            out[9] = out[19] = ppua >> 16 & 0xff;
-            out[10] = out[20] = ppua >> 8 & 0xff;
-            out[11] = out[21] =  ppua & 0xff;
-            out[22] = 0xA0;
-            out[23] = 0x03;
-            out[24] = _emmdate(day,mon,year) >> 8 & 0xff;
-            out[25] = _emmdate(day,mon,year) & 0xff;
-            out[26] = _emmdate(day2,mon2,year2) >> 8 & 0xff;
-            out[27] = _emmdate(day2,mon2,year2) & 0xff;
-            out[28] = 0xA0;
-            out[29] = 0x04;
-            out[30] = acc >> 24 & 0xff;
-            out[31] = acc >> 16 & 0xff;
-            out[32] = acc >> 8 & 0xff;
-            out[33] = acc & 0xff;
-            out[51] = 0xA0;
-            out[52] = 0x02;
-            out[53] = ppsa >> 24 & 0xff;
-            out[54] = ppsa >> 16 & 0xff;
-            out[55] = ppsa >> 8 & 0xff;
-            out[56] = ppsa & 0xff;
-            out[57] = 0xA0;
-            out[58] = 0x01;
-            out[59] = sid >> 8 & 0xff;
-            out[60] = sid & 0xff;
+            out[idx] = 0xA0;idx++;
+            out[idx] = 0x02;idx++;
+            out[idx] = ppsa >> 24 & 0xff;idx++;
+            out[idx] = ppsa >> 16 & 0xff;idx++;
+            out[idx] = ppsa >> 8 & 0xff;idx++;
+            out[idx] = ppsa & 0xff;idx++;
+            out[idx] = 0xA0;idx++;
+            out[idx] = 0x01;idx++;
+            out[idx] = sid >> 8 & 0xff;idx++;
+            out[idx] = sid & 0xff;idx++;
 
             memset(&name,0,20);
 
@@ -349,18 +359,22 @@ uint8_t generate_emm(char *in,uint8_t *out,uint8_t debug){
                 printf("SHARED EMM\n");
                 printf("Shared Address: %d PPSA: %08X\n",ppsa,ppsa);
             }
-            out[16] = 0xA0;
-            out[17] = 0x02;
-            out[8] = out[18] = ppsa >> 24 & 0xff;
-            out[9] = out[19] = ppsa >> 16 & 0xff;
-            out[10] = out[20] = ppsa >> 8 & 0xff;
-            out[11] = out[21] =  ppsa & 0xff;
-            out[22] = 0xA0;
-            out[23] = 0x20;
-            memcpy(&out[24],key20,16);
-            out[40] = 0xA0;
-            out[41] = 0x21;
-            memcpy(&out[42],key21,16);
+            idx = 16;
+            out[idx] = time >> 8 & 0xff;idx++;
+            out[idx] = time & 0xff;idx++;
+            out[idx] = 0xA0;idx++;
+            out[idx] = 0x02;idx++;
+            out[8] = out[idx] = ppsa >> 24 & 0xff;idx++;
+            out[9] = out[idx] = ppsa >> 16 & 0xff;idx++;
+            out[10] = out[idx] = ppsa >> 8 & 0xff;idx++;
+            out[11] = out[idx] =  ppsa & 0xff;idx++;
+            out[idx] = 0xA0;idx++;
+            out[idx] = 0x20;idx++;
+            memcpy(&out[idx],key20,16);
+            idx += 16;
+            out[idx] = 0xA0;idx++;
+            out[idx] = 0x21;idx++;
+            memcpy(&out[idx],key21,16);
 
             pp[0] = ppsa >> 24 & 255;
             pp[1] = ppsa >> 16 & 255;

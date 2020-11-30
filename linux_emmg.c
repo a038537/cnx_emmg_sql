@@ -56,13 +56,13 @@ int main(int argc, char const *argv[])
      }
 
      for(int i = 1;i<argc;i++){
-        if(!strcmp(argv[i],"--port")){
+        if(!strcmp(argv[i],"--muxport")){
             port=strtoul(argv[i+1],NULL,0);
         }
-        if(!strcmp(argv[i],"--ip")){
+        if(!strcmp(argv[i],"--muxip")){
             ip=argv[i+1];
         }
-        if(!strcmp(argv[i],"--debug")){
+        if(!strcmp(argv[i],"--gubed")){
             debug = 1;
         }
         if(!strcmp(argv[i],"--dbip")){
@@ -79,8 +79,8 @@ int main(int argc, char const *argv[])
         }
         if(!strcmp(argv[i],"--help")){
             printf("usage: conax-emmg --port 1234 --ip 192.168.1.1 --dbip 192.168.1.1  --dbuser admin --dbpass password\n\n");
-            printf("ARGS:\n\t--ip\t\tIP-ADDRESS of MUX\n");
-            printf("\t--port\t\tPORT of MUX\n");
+            printf("ARGS:\n\t--muxip\t\tIP-ADDRESS of MUX\n");
+            printf("\t--muxport\t\tPORT of MUX\n");
             printf("\t--dbip\t\tIP-ADDRESS of SQL-Database\n");
             printf("\t--dbuser\tDATABASE Username [default: admin]\n");
             printf("\t--dbpass\tDATABASE Password [default: password]\n");
@@ -114,11 +114,11 @@ int main(int argc, char const *argv[])
 
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        printf("\nConnection Failed \n");
+        printf("\nERROR! Connection to MUX failed...\n");
         return -1;
     }
 
-     setup(0,sendbuf);
+     setup(0,sendbuf,debug);
      send(sock, sendbuf, ((sendbuf[4]+5) &0xff ), 0);
      recv(sock , buffer, 1024,0);
 	if(debug == 1){
@@ -127,7 +127,7 @@ int main(int argc, char const *argv[])
 		for(i =0;i < buffer[4]+5;i++){printf("%02X ",buffer[i]&0xff);}
 		printf("\n");
 	}
-     setup(1,sendbuf);
+     setup(1,sendbuf,debug);
      send(sock, sendbuf, ((sendbuf[4]+5) &0xff ), 0);
      recv(sock , buffer, 1024,0);
 	 if(debug == 1){
@@ -136,7 +136,7 @@ int main(int argc, char const *argv[])
 		for(i =0;i < buffer[4]+5;i++){printf("%02X ",buffer[i]&0xff);}
 		printf("\n");
 	 }
-     setup(2,sendbuf);
+     setup(2,sendbuf,debug);
      send(sock, sendbuf, ((sendbuf[4]+5) &0xff ), 0);
      recv(sock, buffer, 1024,0);
 	 if(debug == 1){
@@ -154,8 +154,6 @@ int main(int argc, char const *argv[])
 while(true){
 
     if(timer <= time(0)){
-
-
 
     /* SEND UNIQUE EMM TO ALL CARDS IN SUBSCRIPTION */
     if (mysql_query(con, " \
@@ -244,10 +242,22 @@ while(true){
 	} /* END SEND SHARED EMM */
 
     /* DELETE OLD SUBSCRIPTIONS */
-    if (mysql_query(con, "DELETE FROM neovision.abo WHERE abo.`stop-date` < (NOW() - INTERVAL 1 MONTH);"))
+    if (mysql_query(con, "DELETE FROM neovision.abo WHERE abo.`stop-date` < (NOW() - INTERVAL 2 MONTH);"))
     {
         finish_with_errors(con);
     }
+
+    /* UPDATE ECM-KEYS */
+    if (mysql_query(con, "\
+                    UPDATE neovision.ecmg_keys \
+                    SET ecmg_keys.ecmkey = md5(rand()*1001), ecmg_keys.modified = (NOW() + INTERVAL 1 MONTH) \
+                    WHERE ecmg_keys.modified < (NOW() - INTERVAL 1 MONTH); \
+                    "))
+    {
+        finish_with_errors(con);
+    }
+
+    read_keys_sql(debug,database,user,pass,dbname);
 
 		if(debug == 1){
 			printf("Database processed... Continue sending NULL-Packets\n");
