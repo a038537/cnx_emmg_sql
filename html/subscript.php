@@ -49,7 +49,7 @@ class AutoComplete extends Common
 		echo $html;
 
 		// Set default session configuration variables here
-		$defaultSessionData['orderByColumn'] = 'ppua';
+		$defaultSessionData['orderByColumn'] = 'first_name';
 
 		$defaultSessionData = base64_encode($this->Editor->jsonEncode($defaultSessionData));
 
@@ -71,6 +71,18 @@ class AutoComplete extends Common
 							$.getJSON("'.$_SERVER['PHP_SELF'].'", { dept: request.term }, responseFun);
 						}
 					});
+
+					$("input[type=text]#'.$this->mateInstances[0].'chid").autocomplete({
+						source: function(request, response) {
+							$("#ajaxLoader1").css("display","block");
+							var responseFun = function(data, textStatus, jqXHR) {
+								response(data, textStatus, jqXHR);
+								$("#ajaxLoader1").css("display","none");
+							}
+							$.getJSON("'.$_SERVER['PHP_SELF'].'", { chid: request.term }, responseFun);
+						}
+					});
+
 				}
 
 			</script>';
@@ -84,61 +96,66 @@ class AutoComplete extends Common
 
 	protected function initiateEditor()
 	{
-		//$this->Editor->setConfig('tableTitle','Employees');
+
+		$tableColumns['id'] = array(
+			'display_text' => 'ID',
+			'perms' => 'T'
+		);
 
 		$tableColumns['ppua'] = array(
-			'display_text' => 'Serial',
-			'perms' => 'EVCTAXQSHOF', 'req' => true,
+			'display_text' => 'Serial Number',
+			'perms' => 'EVCTAXQSHOF',
+			'req' => true
 		);
 
-                $tableColumns['chid'] = array(
-                        'display_text' => 'Channel-id',
-                        'perms' => 'EVCTAXQSHOF', 'req' => true,
-			'default' => '1010'
+		$tableColumns['chid'] = array(
+                        'display_text' => 'Channel-ID',
+			'display_mask' => "concat(chid,' ',(select providername from providers where providers.chid = abo.chid))",
+                        'perms' => 'EVCTAXQSHOF',
+			'req' => true
                 );
 
-
-                $tableColumns['access'] = array(
+		$tableColumns['acc'] = array(
                         'display_text' => 'Access-Criteria',
                         'perms' => 'EVCTAXQSHOF',
+			'req' => true
                 );
 
-                $tableColumns['start-date'] = array(
-                        'display_text' => 'Start of Subscription',
-                        'req' => true,
-                        'perms' => 'TEVCAXQSHOF',
-                        'display_mask' => 'date_format(`start-date`,"%d %M %Y")',
-                        'order_mask' => 'start-date',
-                        'range_mask' => 'start-date',
-                        'calendar' => array('js_format' => 'dd MM yy',
-                        'options' => array('showButtonPanel' => true)),
-                        'col_header_info' => 'style="width: 250px;"'
-                );
-
-                $tableColumns['stop-date'] = array(
-                        'display_text' => 'End of Subscription',
-                        'req' => true,
-                        'perms' => 'TEVCAXQSHOF',
-                        'display_mask' => 'date_format(`stop-date`,"%d %M %Y")',
-                        'order_mask' => 'stop-date',
-                        'range_mask' => 'stop-date',
-                        'calendar' => array('js_format' => 'dd MM yy',
-                        'options' => array('showButtonPanel' => true)),
-                        'col_header_info' => 'style="width: 250px;"'
-                );
-
-
-		$tableColumns['changed'] = array(
-			'display_text' => 'Last Modified',
+		$tableColumns['bos'] = array(
+			'display_text' => 'Subscription start',
 			'req' => true,
-			'perms' => 'EVCAXQSHOF',
-			'display_mask' => 'date_format(`changed`,"%d %M %Y")',
-			'order_mask' => 'changed',
-			'range_mask' => 'changed',
+			'perms' => 'TEVCAXQSHOF',
+			'display_mask' => 'date_format(`bos`,"%d %M %Y")',
+			'order_mask' => 'bos',
+			'range_mask' => 'bos',
 			'calendar' => array('js_format' => 'dd MM yy',
 			'options' => array('showButtonPanel' => true)),
-			'col_header_info' => 'style="width: 250px;"'
+			'col_header_info' => 'style="width: 250px;"',
 		);
+
+		$tableColumns['eos'] = array(
+                        'display_text' => 'Subscription End',
+                        'req' => true,
+                        'perms' => 'TEVCAXQSHOF',
+                        'display_mask' => 'date_format(`eos`,"%d %M %Y")',
+                        'order_mask' => 'eos',
+                        'range_mask' => 'eos',
+                        'calendar' => array('js_format' => 'dd MM yy',
+                        'options' => array('showButtonPanel' => true)),
+                        'col_header_info' => 'style="width: 250px;"',
+                );
+
+		$tableColumns['changed'] = array(
+			'display_text' => 'edited',
+			'perms' => 'T',
+			//'display_mask' => 'date_format(`changed`,"%d.%m.%Y")',
+			'order_mask' => 'cards.changed',
+			'range_mask' => 'cards.changed',
+			'calendar' => array('js_format' => 'dd MM yy',
+			'options' => array('showButtonPanel' => true)),
+			'col_header_info' => 'style="width: 250px;"',
+		);
+
 
 		$tableName = 'abo';
 		$primaryCol = 'id';
@@ -148,9 +165,9 @@ class AutoComplete extends Common
 		$this->Editor = new AjaxTableEditor($tableName,$primaryCol,$errorFun,$permissions,$tableColumns);
 		$this->Editor->setConfig('tableInfo','cellpadding="1" cellspacing="1" align="center" width="1100" class="mateTable"');
 		$this->Editor->setConfig('orderByColumn','ppua');
-		$this->Editor->setConfig('tableTitle','Subscriptions <div style="font-size: 12px; font-weight: normal;">given to customers</div>');
-		$this->Editor->setConfig('addRowTitle','Add new Cardholder');
-		$this->Editor->setConfig('editRowTitle','Edit Cardholder');
+		$this->Editor->setConfig('tableTitle','Subscriptions <div style="font-size: 12px; font-weight: normal;">Rolled out to the Subcribers</div>');
+		$this->Editor->setConfig('addRowTitle','Add Customer');
+		$this->Editor->setConfig('editRowTitle','Edit Customer');
 		$this->Editor->setConfig('addScreenFun',array(&$this,'autoCompleteCallback'));
 		$this->Editor->setConfig('editScreenFun',array(&$this,'autoCompleteCallback'));
 		$this->Editor->setConfig('instanceName',$this->mateInstances[0]);
@@ -158,16 +175,11 @@ class AutoComplete extends Common
 		//$this->Editor->setConfig('viewQuery',true);
 	}
 
-	public function replaceBool($col,$val,$row,$instanceName)
-	{
-     		return str_replace(array('0','1'),array('No','Yes'),$val);
-	}
-
-
 	public function getDeptSuggestions()
 	{
 		$depts = array();
-		$query = "select distinct ppua from neovision.cards";
+		//$query = "select ppua from cards";
+		$query = "select ppua from cards where (select concat(lastname,' ',firstname,' ',street) from customers) like :dept limit 20";
 		$stmt = DBC::get()->prepare($query);
 		$stmt->execute(array('dept' => $_GET['dept'].'%'));
 		while($row = $stmt->fetch())
@@ -176,6 +188,21 @@ class AutoComplete extends Common
 		}
 		echo $this->Editor->jsonEncode($depts);
 	}
+
+
+	public function getchidSuggestions()
+	{
+		$depts = array();
+		$query = "select chid from providers where providername like :chid limit 20";
+		$stmt = DBC::get()->prepare($query);
+		$stmt->execute(array('chid' => $_GET['chid'].'%'));
+		while($row = $stmt->fetch())
+		{
+			$depts[] = $row['chid'];
+		}
+		echo $this->Editor->jsonEncode($depts);
+	}
+
 
 	function __construct()
 	{
@@ -209,9 +236,13 @@ class AutoComplete extends Common
 			echo $this->Editor->exportInfo();
 			exit();
 		}
-        else if(isset($_GET['ppua']))
+        else if(isset($_GET['dept']))
         {
         	$this->getDeptSuggestions();
+        }
+        else if(isset($_GET['chid']))
+        {
+                $this->getchidSuggestions();
         }
 		else
 		{

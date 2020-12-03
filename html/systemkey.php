@@ -61,7 +61,7 @@ class AutoComplete extends Common
 
 				function startAutoComplete()
 				{
-					$("input[type=text]#'.$this->mateInstances[0].'department").autocomplete({
+					$("input[type=text]#'.$this->mateInstances[0].'systemkey").autocomplete({
 						source: function(request, response) {
 							$("#ajaxLoader1").css("display","block");
 							var responseFun = function(data, textStatus, jqXHR) {
@@ -84,54 +84,23 @@ class AutoComplete extends Common
 
 	protected function initiateEditor()
 	{
-		$tableColumns['id'] = array(
-			'display_text' => 'ID',
-			'perms' => 'TVQSXO'
+
+		$tableColumns['systemkey'] = array(
+			'display_text' => 'systemkey',
+			'perms' => 'EVCTAXQSHOF', 'req' => true,
 		);
 
-		$tableColumns['first_name'] = array(
-			'display_text' => 'First Name',
-			'perms' => 'EVCTAXQSHOF', 'req' => true
-		);
-
-		$tableColumns['last_name'] = array(
-			'display_text' => 'Last Name',
-			'perms' => 'EVCTAXQSHOF'
-		);
-
-		$tableColumns['email'] = array(
-			'display_text' => 'Email',
-			'perms' => 'EVCTAXQSHOF'
-		);
-
-		$tableColumns['department'] = array(
-			'display_text' => 'Department',
-			'perms' => 'EVCTAXQSHOF',
-		);
-
-		$tableColumns['hire_date'] = array(
-			'display_text' => 'Hire Date',
-			'req' => true,
-			'perms' => 'EVCTAXQSHOF',
-			'display_mask' => 'date_format(`hire_date`,"%d %M %Y")',
-			'order_mask' => 'employees.hire_date',
-			'range_mask' => 'employees.hire_date',
-			'calendar' => array('js_format' => 'dd MM yy',
-				'options' => array('showButtonPanel' => false)),
-			'col_header_info' => 'style="width: 250px;"'
-		);
-
-		$tableName = 'employees';
-		$primaryCol = 'id';
+		$tableName = 'emmg_systemkey';
+		$primaryCol = 'systemkey';
 		$errorFun = array(&$this,'logError');
 		$permissions = 'EAVDQCSXHOI';
 
 		$this->Editor = new AjaxTableEditor($tableName,$primaryCol,$errorFun,$permissions,$tableColumns);
 		$this->Editor->setConfig('tableInfo','cellpadding="1" cellspacing="1" align="center" width="1100" class="mateTable"');
-		$this->Editor->setConfig('orderByColumn','first_name');
-		$this->Editor->setConfig('tableTitle','Auto Complete <div style="font-size: 12px; font-weight: normal;">on the department field</div>');
-		$this->Editor->setConfig('addRowTitle','Add Employee');
-		$this->Editor->setConfig('editRowTitle','Edit Employee');
+		$this->Editor->setConfig('orderByColumn','ppua');
+		$this->Editor->setConfig('tableTitle','Providers <div style="font-size: 12px; font-weight: normal;">Avaiable to the Subcribers</div>');
+		$this->Editor->setConfig('addRowTitle','Add Customer');
+		$this->Editor->setConfig('editRowTitle','Edit Customer');
 		$this->Editor->setConfig('addScreenFun',array(&$this,'autoCompleteCallback'));
 		$this->Editor->setConfig('editScreenFun',array(&$this,'autoCompleteCallback'));
 		$this->Editor->setConfig('instanceName',$this->mateInstances[0]);
@@ -142,12 +111,12 @@ class AutoComplete extends Common
 	public function getDeptSuggestions()
 	{
 		$depts = array();
-		$query = "select distinct department from employees where department like :dept limit 20";
+		$query = "select MD5(:dept) as test";
 		$stmt = DBC::get()->prepare($query);
 		$stmt->execute(array('dept' => $_GET['dept'].'%'));
 		while($row = $stmt->fetch())
 		{
-			$depts[] = $row['department'];
+			$depts[] = $row['test'];
 		}
 		echo $this->Editor->jsonEncode($depts);
 	}

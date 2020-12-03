@@ -49,7 +49,7 @@ class AutoComplete extends Common
 		echo $html;
 
 		// Set default session configuration variables here
-		$defaultSessionData['orderByColumn'] = 'ppua';
+		$defaultSessionData['orderByColumn'] = 'first_name';
 
 		$defaultSessionData = base64_encode($this->Editor->jsonEncode($defaultSessionData));
 
@@ -71,6 +71,18 @@ class AutoComplete extends Common
 							$.getJSON("'.$_SERVER['PHP_SELF'].'", { dept: request.term }, responseFun);
 						}
 					});
+
+					$("input[type=text]#'.$this->mateInstances[0].'chid").autocomplete({
+						source: function(request, response) {
+							$("#ajaxLoader1").css("display","block");
+							var responseFun = function(data, textStatus, jqXHR) {
+								response(data, textStatus, jqXHR);
+								$("#ajaxLoader1").css("display","none");
+							}
+							$.getJSON("'.$_SERVER['PHP_SELF'].'", { chid: request.term }, responseFun);
+						}
+					});
+
 				}
 
 			</script>';
@@ -84,63 +96,79 @@ class AutoComplete extends Common
 
 	protected function initiateEditor()
 	{
-		//$this->Editor->setConfig('tableTitle','Employees');
 
-		$tableColumns['ppua'] = array(
-			'display_text' => 'Serial',
-			'perms' => 'EVCTAXQSHOF', 'req' => true,
+		$tableColumns['id'] = array(
+			'display_text' => 'ID',
+			'perms' => 'T'
 		);
 
-                $tableColumns['chid'] = array(
-                        'display_text' => 'Channel-id',
-                        'perms' => 'EVCTAXQSHOF', 'req' => true,
-			'default' => '1010'
-                );
+		$tableColumns['temp'] = array(
+			'display_text' => 'Customer',
+			'display_mask' => "concat(firstname,' ',lastname,', ',street,', ',zipcode,', ',city,', ',state)",
+			//'view_fun' => 'concat(firstname,' ',lastname)',
+			'perms' => 'T'
+		);
 
 
-                $tableColumns['access'] = array(
-                        'display_text' => 'Access-Criteria',
-                        'perms' => 'EVCTAXQSHOF',
+		$tableColumns['firstname'] = array(
+			'display_text' => 'First Name',
+			'perms' => 'EVCAXQSHOF',
+			'req' => true
+		);
+
+		$tableColumns['lastname'] = array(
+                        'display_text' => 'Last Name',
+                        'perms' => 'EVCAXQSHOF',
+			'req' => true
                 );
 
-                $tableColumns['start-date'] = array(
-                        'display_text' => 'Start of Subscription',
-                        'req' => true,
-                        'perms' => 'TEVCAXQSHOF',
-                        'display_mask' => 'date_format(`start-date`,"%d %M %Y")',
-                        'order_mask' => 'start-date',
-                        'range_mask' => 'start-date',
-                        'calendar' => array('js_format' => 'dd MM yy',
-                        'options' => array('showButtonPanel' => true)),
-                        'col_header_info' => 'style="width: 250px;"'
+		$tableColumns['street'] = array(
+                        'display_text' => 'Street',
+                        'perms' => 'EVCAXQSHOF',
+			'req' => true
                 );
 
-                $tableColumns['stop-date'] = array(
-                        'display_text' => 'End of Subscription',
-                        'req' => true,
-                        'perms' => 'TEVCAXQSHOF',
-                        'display_mask' => 'date_format(`stop-date`,"%d %M %Y")',
-                        'order_mask' => 'stop-date',
-                        'range_mask' => 'stop-date',
-                        'calendar' => array('js_format' => 'dd MM yy',
-                        'options' => array('showButtonPanel' => true)),
-                        'col_header_info' => 'style="width: 250px;"'
+                $tableColumns['city'] = array(
+                        'display_text' => 'City',
+                        'perms' => 'EVCAXQSHOF',
+			'req' => true
                 );
+
+		$tableColumns['zipcode'] = array(
+                        'display_text' => 'ZIP-Code',
+                        'perms' => 'EVCAXQSHOF',
+			'req' => true
+                );
+
+		$tableColumns['state'] = array(
+                        'display_text' => 'State',
+                        'perms' => 'EVCAXQSHOF',
+                        'req' => true
+                );
+
+		$tableColumns['phone'] = array(
+			'display_text' => 'Phone Number',
+			'perms' => 'EVCAXQSHOF'
+		);
+
+		$tableColumns['email'] = array(
+			'display_text' => 'E-Mail',
+			'perms' => 'EVCAXQSHOF', 'req' => true
+		);
 
 
 		$tableColumns['changed'] = array(
-			'display_text' => 'Last Modified',
-			'req' => true,
-			'perms' => 'EVCAXQSHOF',
-			'display_mask' => 'date_format(`changed`,"%d %M %Y")',
+			'display_text' => 'edited',
+			'perms' => 'T',
 			'order_mask' => 'changed',
 			'range_mask' => 'changed',
 			'calendar' => array('js_format' => 'dd MM yy',
 			'options' => array('showButtonPanel' => true)),
-			'col_header_info' => 'style="width: 250px;"'
+			'col_header_info' => 'style="width: 250px;"',
 		);
 
-		$tableName = 'abo';
+
+		$tableName = 'customers';
 		$primaryCol = 'id';
 		$errorFun = array(&$this,'logError');
 		$permissions = 'EAVDQCSXHOI';
@@ -148,9 +176,9 @@ class AutoComplete extends Common
 		$this->Editor = new AjaxTableEditor($tableName,$primaryCol,$errorFun,$permissions,$tableColumns);
 		$this->Editor->setConfig('tableInfo','cellpadding="1" cellspacing="1" align="center" width="1100" class="mateTable"');
 		$this->Editor->setConfig('orderByColumn','ppua');
-		$this->Editor->setConfig('tableTitle','Subscriptions <div style="font-size: 12px; font-weight: normal;">given to customers</div>');
-		$this->Editor->setConfig('addRowTitle','Add new Cardholder');
-		$this->Editor->setConfig('editRowTitle','Edit Cardholder');
+		$this->Editor->setConfig('tableTitle','Customers <div style="font-size: 12px; font-weight: normal;"></div>');
+		$this->Editor->setConfig('addRowTitle','Add Customer');
+		$this->Editor->setConfig('editRowTitle','Edit Customer');
 		$this->Editor->setConfig('addScreenFun',array(&$this,'autoCompleteCallback'));
 		$this->Editor->setConfig('editScreenFun',array(&$this,'autoCompleteCallback'));
 		$this->Editor->setConfig('instanceName',$this->mateInstances[0]);
@@ -158,16 +186,10 @@ class AutoComplete extends Common
 		//$this->Editor->setConfig('viewQuery',true);
 	}
 
-	public function replaceBool($col,$val,$row,$instanceName)
-	{
-     		return str_replace(array('0','1'),array('No','Yes'),$val);
-	}
-
-
 	public function getDeptSuggestions()
 	{
 		$depts = array();
-		$query = "select distinct ppua from neovision.cards";
+		$query = "select ppua from cards";
 		$stmt = DBC::get()->prepare($query);
 		$stmt->execute(array('dept' => $_GET['dept'].'%'));
 		while($row = $stmt->fetch())
@@ -176,6 +198,21 @@ class AutoComplete extends Common
 		}
 		echo $this->Editor->jsonEncode($depts);
 	}
+
+
+	public function getchidSuggestions()
+	{
+		$depts = array();
+		$query = "select chid from providers";
+		$stmt = DBC::get()->prepare($query);
+		$stmt->execute(array('chid' => $_GET['chid'].'%'));
+		while($row = $stmt->fetch())
+		{
+			$depts[] = $row['chid'];
+		}
+		echo $this->Editor->jsonEncode($depts);
+	}
+
 
 	function __construct()
 	{
@@ -209,9 +246,13 @@ class AutoComplete extends Common
 			echo $this->Editor->exportInfo();
 			exit();
 		}
-        else if(isset($_GET['ppua']))
+        else if(isset($_GET['dept']))
         {
         	$this->getDeptSuggestions();
+        }
+        else if(isset($_GET['chid']))
+        {
+                $this->getchidSuggestions();
         }
 		else
 		{

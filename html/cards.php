@@ -71,6 +71,17 @@ class AutoComplete extends Common
 							$.getJSON("'.$_SERVER['PHP_SELF'].'", { dept: request.term }, responseFun);
 						}
 					});
+
+					$("input[type=text]#'.$this->mateInstances[0].'cust").autocomplete({
+						source: function(request, response) {
+							$("#ajaxLoader1").css("display","block");
+							var responseFun = function(data, textStatus, jqXHR) {
+								response(data, textStatus, jqXHR);
+								$("#ajaxLoader1").css("display","none");
+							}
+							$.getJSON("'.$_SERVER['PHP_SELF'].'", { cust: request.term }, responseFun);
+						}
+					});
 				}
 
 			</script>';
@@ -104,42 +115,24 @@ class AutoComplete extends Common
                         'default' => '0',
 		);
 
-		$tableColumns['surname'] = array(
-			'display_text' => 'Last Name',
-			'perms' => 'EVCTAXQSHOF'
-		);
-
-                $tableColumns['given_name'] = array(
-                        'display_text' => 'First Name',
-                        'perms' => 'EVCTAXQSHOF',
-		);
-
-		$tableColumns['address'] = array(
-			'display_text' => 'Street',
-			'perms' => 'EVCTAXQSHOF',
-		);
-
-                $tableColumns['city'] = array(
-                        'display_text' => 'City',
+		$tableColumns['cust'] = array(
+                        'display_text' => 'customer',
+			'display_mask' => "(select concat(firstname,' ',lastname,', ',street,', ',zipcode,', ',city,', ',state) from customers where customers.id = cust)",
                         'perms' => 'EVCTAXQSHOF'
                 );
 
-                $tableColumns['zip'] = array(
-                        'display_text' => 'Zip-Code',
-                        'perms' => 'EVCTAXQSHOF'
-                );
 
 		$tableColumns['changed'] = array(
 			'display_text' => 'edited',
-			'req' => true,
-			'perms' => 'EVCAXQSHOF',
-			'display_mask' => 'date_format(`changed`,"%d %M %Y")',
+			'perms' => 'T',
+			//'display_mask' => 'date_format(`changed`,"%d %M %Y")',
 			'order_mask' => 'cards.changed',
 			'range_mask' => 'cards.changed',
 			'calendar' => array('js_format' => 'dd MM yy',
-				'options' => array('showButtonPanel' => true)),
+			'options' => array('showButtonPanel' => true)),
 			'col_header_info' => 'style="width: 250px;"',
 		);
+
 
 		$tableName = 'cards';
 		$primaryCol = 'ppua';
@@ -171,6 +164,20 @@ class AutoComplete extends Common
 		}
 		echo $this->Editor->jsonEncode($depts);
 	}
+
+	public function getCustSuggestions()
+	{
+		$depts = array();
+		$query = "select id from customers where concat(lastname,' ',firstname,' ',street) like :cust limit 20";
+		$stmt = DBC::get()->prepare($query);
+		$stmt->execute(array('cust' => $_GET['cust'].'%'));
+		while($row = $stmt->fetch())
+		{
+			$depts[] = $row['id'];
+		}
+		echo $this->Editor->jsonEncode($depts);
+	}
+
 
 	function __construct()
 	{
@@ -207,6 +214,10 @@ class AutoComplete extends Common
         else if(isset($_GET['dept']))
         {
         	$this->getDeptSuggestions();
+        }
+        else if(isset($_GET['cust']))
+        {
+        	$this->getCustSuggestions();
         }
 		else
 		{

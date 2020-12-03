@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 28. Nov 2020 um 20:00
+-- Erstellungszeit: 03. Dez 2020 um 16:05
 -- Server-Version: 5.7.31-0ubuntu0.18.04.1
 -- PHP-Version: 7.2.24-0ubuntu0.18.04.7
 
@@ -28,11 +28,11 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `abo` (
   `id` int(11) NOT NULL,
-  `ppua` varchar(8) NOT NULL,
+  `ppua` int(8) NOT NULL,
   `chid` varchar(4) NOT NULL,
-  `start-date` date NOT NULL,
-  `stop-date` date NOT NULL,
-  `access` varchar(8) NOT NULL,
+  `acc` varchar(8) NOT NULL,
+  `bos` date DEFAULT NULL,
+  `eos` date DEFAULT NULL,
   `changed` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -40,11 +40,8 @@ CREATE TABLE `abo` (
 -- Daten für Tabelle `abo`
 --
 
-INSERT INTO `abo` (`id`, `ppua`, `chid`, `start-date`, `stop-date`, `access`, `changed`) VALUES
-(1, '80000000', '1010', '2020-11-01', '2021-01-31', '1FFFFFFF', '2020-11-28 18:29:13'),
-(2, '80000001', '1010', '2020-11-01', '2020-12-31', '000000AA', '2020-11-28 18:28:15'),
-(3, '80000000', '101f', '2020-11-01', '2021-01-31', '1FFFFFFF', '2020-11-28 18:29:24'),
-(4, '80000001', '101f', '2020-11-01', '2021-01-31', '000000AA', '2020-11-28 18:27:52');
+INSERT INTO `abo` (`id`, `ppua`, `chid`, `acc`, `bos`, `eos`, `changed`) VALUES
+(1, 80000000, '1010', '1FFFFFFF', '2020-12-01', '2020-12-31', '2020-12-03 08:35:51');
 
 -- --------------------------------------------------------
 
@@ -53,14 +50,10 @@ INSERT INTO `abo` (`id`, `ppua`, `chid`, `start-date`, `stop-date`, `access`, `c
 --
 
 CREATE TABLE `cards` (
-  `ppua` varchar(8) NOT NULL,
-  `ppsa` varchar(6) NOT NULL,
-  `deleted` tinyint(1) NOT NULL,
-  `surname` varchar(64) NOT NULL,
-  `given_name` varchar(64) NOT NULL,
-  `address` varchar(64) NOT NULL,
-  `city` varchar(64) NOT NULL,
-  `zip` varchar(6) NOT NULL,
+  `ppua` int(8) NOT NULL,
+  `ppsa` varchar(6) NOT NULL DEFAULT '990000',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `cust` int(8) DEFAULT NULL,
   `changed` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -68,10 +61,35 @@ CREATE TABLE `cards` (
 -- Daten für Tabelle `cards`
 --
 
-INSERT INTO `cards` (`ppua`, `ppsa`, `deleted`, `surname`, `given_name`, `address`, `city`, `zip`, `changed`) VALUES
-('80000000', '999999', 0, 'Trump', 'Donald', 'White House 1', 'Washington DC', '123456', '2020-11-28 18:57:59'),
-('80000001', '990000', 0, 'Merkel', 'Angela', 'Bundestag', 'Berlin', '10627', '2020-11-28 18:58:23'),
-('80000002', '990000', 0, 'Erdogan', 'Recep', 'Talallee', 'Istanbul', '654321', '2020-11-28 19:00:03');
+INSERT INTO `cards` (`ppua`, `ppsa`, `deleted`, `cust`, `changed`) VALUES
+(80000000, '999999', 0, 1, '2020-12-03 12:39:05');
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `customers`
+--
+
+CREATE TABLE `customers` (
+  `id` int(11) NOT NULL,
+  `firstname` varchar(32) DEFAULT NULL,
+  `lastname` varchar(32) DEFAULT NULL,
+  `street` varchar(32) DEFAULT NULL,
+  `city` varchar(32) DEFAULT NULL,
+  `zipcode` varchar(8) DEFAULT NULL,
+  `state` varchar(32) DEFAULT NULL,
+  `email` varchar(32) DEFAULT NULL,
+  `phone` varchar(32) DEFAULT NULL,
+  `changed` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `temp` varchar(1) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Daten für Tabelle `customers`
+--
+
+INSERT INTO `customers` (`id`, `firstname`, `lastname`, `street`, `city`, `zipcode`, `state`, `email`, `phone`, `changed`, `temp`) VALUES
+(1, 'Tony', 'Stark', 'Stark-Tower', 'NYC', '12345', 'USA', 'Tony.Stark@starkindustries.com', '', '2020-12-03 13:11:56', '');
 
 -- --------------------------------------------------------
 
@@ -81,16 +99,17 @@ INSERT INTO `cards` (`ppua`, `ppsa`, `deleted`, `surname`, `given_name`, `addres
 
 CREATE TABLE `ecmg_keys` (
   `id` int(2) NOT NULL,
-  `ecmkey` varchar(32) NOT NULL
+  `ecmkey` varchar(32) NOT NULL,
+  `modified` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Daten für Tabelle `ecmg_keys`
 --
 
-INSERT INTO `ecmg_keys` (`id`, `ecmkey`) VALUES
-(20, 'BBAA998877665544FFEEDDCC33221100'),
-(21, '77665544BBAA998833221100FFEEDDCC');
+INSERT INTO `ecmg_keys` (`id`, `ecmkey`, `modified`) VALUES
+(20, 'BBAA998877665544FFEEDDCC33221100', '2020-12-01'),
+(21, '0740eaf965328e4d6b38154e0ce0bad3', '2021-01-01');
 
 -- --------------------------------------------------------
 
@@ -126,9 +145,7 @@ CREATE TABLE `providers` (
 --
 
 INSERT INTO `providers` (`chid`, `providername`) VALUES
-('100A', 'TESLA-2'),
-('1010', 'NeoVision'),
-('101F', 'NeoVision-PPV');
+('1010', 'NeoVision');
 
 --
 -- Indizes der exportierten Tabellen
@@ -138,14 +155,25 @@ INSERT INTO `providers` (`chid`, `providername`) VALUES
 -- Indizes für die Tabelle `abo`
 --
 ALTER TABLE `abo`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `ID` (`id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indizes für die Tabelle `cards`
 --
 ALTER TABLE `cards`
   ADD PRIMARY KEY (`ppua`);
+
+--
+-- Indizes für die Tabelle `customers`
+--
+ALTER TABLE `customers`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indizes für die Tabelle `ecmg_keys`
+--
+ALTER TABLE `ecmg_keys`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indizes für die Tabelle `emmg_systemkey`
@@ -167,7 +195,17 @@ ALTER TABLE `providers`
 -- AUTO_INCREMENT für Tabelle `abo`
 --
 ALTER TABLE `abo`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+--
+-- AUTO_INCREMENT für Tabelle `cards`
+--
+ALTER TABLE `cards`
+  MODIFY `ppua` int(8) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80000001;
+--
+-- AUTO_INCREMENT für Tabelle `customers`
+--
+ALTER TABLE `customers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

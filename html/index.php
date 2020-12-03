@@ -16,12 +16,13 @@ class HomePage extends Common
 	
 	protected function displayHtml()
 	{
-		echo '<h2>Example Scripts</h2>';
-		echo '<p><a href="AutoComplete.php">Auto Complete</a></p>';
-		echo '<p><a href="CkEditor.php">CK Editor</a></p>';
-		echo '<p><a href="InternationalExample.php">International Example</a></p>';
-		echo '<p><a href="JoinExample.php">Multiple Row / User Action / Join Example</a></p>';
-		echo '<p><a href="MultipleTables.php">Multiple Tables In Page</a></p>';
+		echo '<h1>NeoVision CAS Studio</h1>';
+		echo '<h3>Version 0.01a</h3>';
+		echo '<p><a href="customers.php">Edit Customers</a></p>';
+		echo '<p><a href="cards.php">Edit Smart Cards</a></p>';
+		echo '<p><a href="providers.php">Edit Providers</a></p>';
+		echo '<p><a href="subscript.php">Edit Subscriptions</a></p>';
+                echo '<p><a href="systemkey.php">Edit Systemkey</a></p>';
 	}
 	
 	function __construct()

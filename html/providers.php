@@ -14,8 +14,9 @@ require_once('DBC.php');
 require_once('Common.php');
 require_once('php/lang/LangVars-en.php');
 require_once('php/AjaxTableEditor.php');
-class JoinExample extends Common
+class AutoComplete extends Common
 {
+	protected $Editor;
 	protected $mateInstances = array('mate1_');
 
 	protected function displayHtml()
@@ -33,7 +34,6 @@ class JoinExample extends Common
 
 			<div id="mateTooltipErrorDiv" style="display: none;"></div>
 
-
 			<div id="'.$this->mateInstances[0].'titleLayer" class="mateTitleDiv">
 			</div>
 
@@ -45,103 +45,86 @@ class JoinExample extends Common
 
 			<div id="'.$this->mateInstances[0].'searchButtonsLayer" class="mateSearchBtnsDiv">
 			</div>';
+
 		echo $html;
+
 		// Set default session configuration variables here
-		$defaultSessionData['orderByColumn'] = 'employee_id';
+		$defaultSessionData['orderByColumn'] = 'first_name';
 
 		$defaultSessionData = base64_encode($this->Editor->jsonEncode($defaultSessionData));
-
 
 		$javascript = '
 			<script type="text/javascript">
 				var ' . $this->mateInstances[0] . ' = new mate("' . $this->mateInstances[0] . '");
 				' . $this->mateInstances[0] . '.setAjaxInfo({url: "' . $_SERVER['PHP_SELF'] . '", history: true});
 				' . $this->mateInstances[0] . '.init("' . $defaultSessionData . '");
+
+				function startAutoComplete()
+				{
+					$("input[type=text]#'.$this->mateInstances[0].'ppsa").autocomplete({
+						source: function(request, response) {
+							$("#ajaxLoader1").css("display","block");
+							var responseFun = function(data, textStatus, jqXHR) {
+								response(data, textStatus, jqXHR);
+								$("#ajaxLoader1").css("display","none");
+							}
+							$.getJSON("'.$_SERVER['PHP_SELF'].'", { dept: request.term }, responseFun);
+						}
+					});
+				}
+
 			</script>';
 		echo $javascript;
 	}
 
-	public function updateLogin($empId,$instanceName)
+	public function autoCompleteCallback()
 	{
-		$query = "select first_name, last_name from employees where id = :empId";
-		$queryParams = array('empId' => $empId);
-		$result = $this->Editor->doQuery($query,$queryParams);
-		if($row = $result->fetch())
-		{
-			$suggestedLogin = strtolower(substr($row['first_name'],0,1).$row['last_name']).rand(100,999);
-			$this->Editor->setHtmlValue('login',$suggestedLogin);
-		}
-	}
-
-	public function checkForPassword($col,$val,$row)
-	{
-		if(strlen(trim($row['password'])) == 0)
-		{
-			return false;
-		}
-		return $val;
-	}
-
-	public function removePassword($col,$val,$row)
-	{
-		return '';
+		$this->Editor->addJavascript('startAutoComplete();');
 	}
 
 	protected function initiateEditor()
 	{
-		$tableColumns['id'] = array(
-			'display_text' => 'ID',
-			'perms' => ''
-		);
-		$tableColumns['employee_id'] = array(
-			'display_text' => 'Name', 'perms' => 'EVCTAXQS',
-			'join' => array(
-				'table' => 'employees',
-				'column' => 'id',
-				'display_mask' => "concat(employees.first_name,' ',employees.last_name)",
-				'type' => 'left',
-			),
-			'input_info' => 'onchange="'.$this->mateInstances[0].'.toAjaxTableEditor(\'update_login\',$(this).val());"'
-		);
-		$tableColumns['login'] = array(
-			'display_text' => 'Login',
-			'perms' => 'EVCTAXQS'
-		);
-		$tableColumns['password'] = array(
-			'display_text' => 'Password',
-			'perms' => 'EVCAXQT',
-			'input_type' => 'password',
-			'on_edit_fun' => array(&$this,'checkForPassword'),
-			'mysql_add_fun' => 'PASSWORD(:password)',
-			//'mysql_add_fun' => 'PASSWORD(#VALUE#)',
-			//'mysql_edit_fun' => 'PASSWORD(:password)',
-			'mysql_edit_fun' => 'PASSWORD(#VALUE#)',
-			'edit_fun' => array(&$this,'removePassword')
-		);
-		$tableColumns['account_type'] = array(
-			'display_text' => 'Account Type',
-			'perms' => 'EVCTAXQS',
-			'select_array' => array('Admin' => 'Admin', 'User' => 'User'),
-			'default' => 'User'
+
+		$tableColumns['chid'] = array(
+			'display_text' => 'Channel-ID',
+			'perms' => 'EVCTAXQSHOF', 'req' => true
 		);
 
-		$tableName = 'login_info';
-		$primaryCol = 'id';
+		$tableColumns['providername'] = array(
+			'display_text' => 'Provider-Name',
+			'perms' => 'EVCTAXQSHOF'
+		);
+
+		$tableName = 'providers';
+		$primaryCol = 'chid';
 		$errorFun = array(&$this,'logError');
-		$permissions = 'EAVDQCSMXU';
+		$permissions = 'EAVDQCSXHOI';
 
-		require_once('php/AjaxTableEditor.php');
 		$this->Editor = new AjaxTableEditor($tableName,$primaryCol,$errorFun,$permissions,$tableColumns);
-		$this->Editor->setConfig('tableInfo','cellpadding="1" width="900" class="mateTable"');
-		$this->Editor->setConfig('tableTitle','Multiple Edit / User Action / Join Example');
-		$this->Editor->setConfig('addRowTitle','Add Login Info');
-		$this->Editor->setConfig('editRowTitle','Edit Login Info');
-		$this->Editor->setConfig('viewRowTitle','View Login Info');
-		$userActions = array('update_login' => array(&$this,'updateLogin'));
-		$this->Editor->setConfig('userActions',$userActions);
+		$this->Editor->setConfig('tableInfo','cellpadding="1" cellspacing="1" align="center" width="1100" class="mateTable"');
+		$this->Editor->setConfig('orderByColumn','ppua');
+		$this->Editor->setConfig('tableTitle','Providers <div style="font-size: 12px; font-weight: normal;">Avaiable to the Subcribers</div>');
+		$this->Editor->setConfig('addRowTitle','Add Customer');
+		$this->Editor->setConfig('editRowTitle','Edit Customer');
+		$this->Editor->setConfig('addScreenFun',array(&$this,'autoCompleteCallback'));
+		$this->Editor->setConfig('editScreenFun',array(&$this,'autoCompleteCallback'));
+		$this->Editor->setConfig('instanceName',$this->mateInstances[0]);
+		$this->Editor->setConfig('paginationLinks',true);
 		//$this->Editor->setConfig('viewQuery',true);
 	}
 
+	public function getDeptSuggestions()
+	{
+		$depts = array();
+		$query = "select distinct ppsa from neovision.cards";
+		$stmt = DBC::get()->prepare($query);
+		$stmt->execute(array('dept' => $_GET['dept'].'%'));
+		while($row = $stmt->fetch())
+		{
+			$depts[] = $row['ppsa'];
+		}
+		echo $this->Editor->jsonEncode($depts);
+	}
 
 	function __construct()
 	{
@@ -160,6 +143,8 @@ class JoinExample extends Common
 		}
 		else if(isset($_GET['mate_export']))
 		{
+			//var_dump('jsdflk');
+			//exit();
 			$this->Editor->data['sessionData'] = $_GET['session_data'];
 			$this->Editor->setDefaults();
 			ob_end_clean();
@@ -173,6 +158,10 @@ class JoinExample extends Common
 			echo $this->Editor->exportInfo();
 			exit();
 		}
+        else if(isset($_GET['dept']))
+        {
+        	$this->getDeptSuggestions();
+        }
 		else
 		{
 			$this->displayHeaderHtml();
@@ -181,5 +170,5 @@ class JoinExample extends Common
 		}
 	}
 }
-$page = new JoinExample();
+$page = new AutoComplete();
 ?>

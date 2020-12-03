@@ -157,8 +157,8 @@ while(true){
 
     /* SEND UNIQUE EMM TO ALL CARDS IN SUBSCRIPTION */
     if (mysql_query(con, " \
-                SELECT concat('U:',abo.ppua,' '), concat('S:',abo.`start-date`,' ') , \
-                  concat('E:',abo.`stop-date`,' '), concat('A:',abo.access,' '), \
+                SELECT concat('U:',abo.ppua,' '), concat('S:',abo.`bos`,' ') , \
+                  concat('E:',abo.`eos`,' '), concat('A:',abo.acc,' '), \
                   concat('N:',providers.providername,' '), concat('SA:',cards.ppsa,' '), concat('ID:',providers.chid,' ')\
                 FROM neovision.providers join neovision.abo join neovision.cards \
                 ON providers.chid = abo.chid and cards.ppua = abo.ppua and cards.deleted = 0;\
@@ -242,7 +242,7 @@ while(true){
 	} /* END SEND SHARED EMM */
 
     /* DELETE OLD SUBSCRIPTIONS */
-    if (mysql_query(con, "DELETE FROM neovision.abo WHERE abo.`stop-date` < (NOW() - INTERVAL 2 MONTH);"))
+    if (mysql_query(con, "DELETE FROM neovision.abo WHERE abo.`eos` < (NOW() - INTERVAL 2 MONTH);"))
     {
         finish_with_errors(con);
     }

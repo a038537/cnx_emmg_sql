@@ -14,7 +14,7 @@ class DBC
 {
 	private static $instance = null;
 	private static $dbcInfo = array(
-		'host' => 'raspberrypi'
+		'host' => 'localhost'
 		, 'db' => 'neovision'
 		, 'user' => 'root'
 		, 'password' => 'gftty2478'

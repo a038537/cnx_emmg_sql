@@ -37,7 +37,7 @@ class Common
 		"http://www.w3.org/TR/html4/loose.dtd">
 		<html>
 		<head>
-		<title>NeoVision CAS Studio</title>
+		<title>Neovision CAS Studio</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		<link href="css/table_styles.css" rel="stylesheet" type="text/css" />
 		<link href="css/icon_styles.css" rel="stylesheet" type="text/css" />
@@ -66,7 +66,7 @@ class Common
 	{
 		?>
 		<?php if($this->showBackLink): ?>
-			<br /><br /><div align="center"><a href="index.php">Home</a></div><br /><br />
+			<br /><br /><div align="center"><a href="index.php">Back to Home</a></div><br /><br />
 		<?php endif; ?>
 		</body>
 		</html>
